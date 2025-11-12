@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🌌 Arc</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --glow1: #a855f7;
+      --glow2: #38bdf8;
+      --glow3: #facc15;
+    }
+
+    body {
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      padding: 1rem;
+      overflow-x: hidden;
+    }
+
+    .app-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .app-logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 0.5rem;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, var(--glow1), var(--glow2), var(--glow3));
+      box-shadow: 0 0 25px rgba(99, 102, 241, 0.5), 0 0 45px rgba(168, 85, 247, 0.3);
+      animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 15px var(--glow1), 0 0 30px var(--glow2); }
+      50% { box-shadow: 0 0 30px var(--glow2), 0 0 60px var(--glow3); }
+      100% { box-shadow: 0 0 15px var(--glow1), 0 0 30px var(--glow2); }
+    }
+
+    h1 {
+      font-weight: 800;
+      font-size: 2.6rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--glow1), var(--glow2), var(--glow3), var(--glow1));
+      background-size: 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: glowShift 5s ease-in-out infinite, textGlow 2s ease-in-out infinite alternate;
+      margin: 0;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.95rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+      margin-top: 0.4rem;
+      opacity: 0;
+      animation: fadeIn 2s ease forwards 0.5s;
+      font-style: italic;
+    }
+
+    @keyframes glowShift {
+      0% { background-position: 0%; }
+      50% { background-position: 100%; }
+      100% { background-position: 0%; }
+    }
+
+    @keyframes textGlow {
+      from { text-shadow: 0 0 10px var(--glow2), 0 0 20px var(--glow1); }
+      to { text-shadow: 0 0 25px var(--glow3), 0 0 45px var(--glow1); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+      padding-bottom: 3rem;
+    }
+
+    .video-card {
+      background: var(--card);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.4s ease;
+    }
+
+    .video-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .video-card:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    video {
+      width: 100%;
+      height: 240px;
+      background: #0f172a;
+      object-fit: cover;
+    }
+
+    .card-body {
+      padding: 0.8rem 1rem;
+      text-align: center;
+    }
+
+    .video-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin: 0.3rem 0;
+      word-wrap: break-word;
+    }
+
+    .video-meta {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+      line-height: 1.4;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      border-top: 1px solid #334155;
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 12px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: var(--accent-hover);
+    }
+
+    .loading {
+      text-align: center;
+      color: var(--muted);
+      margin-top: 2rem;
+    }
+
+    .fullscreen-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      flex-direction: column;
+    }
+
+    .fullscreen-overlay video {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .exit-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      background: #ef4444;
+      padding: 10px 15px;
+      border-radius: 8px;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-header">
+    <div class="app-logo"></div>
+    <h1>Arc</h1>
+    <div class="subtitle">Fragments of time where silence spoke louder than words</div>
+  </div>
+
+  <div id="videoGrid" class="grid"></div>
+  <div id="loadingMsg" class="loading">Retracing moments...</div>
+
+  <script defer>
+    const repoOwner = "yan-shun-180";
+    const repoName = "testing_websites_1";
+    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/videos`;
+    const cdnBase = `https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}/videos/`;
+    const dataTxtUrl = `${cdnBase}data.txt?v=${Date.now()}`;
+
+    const grid = document.getElementById("videoGrid");
+    const loadingMsg = document.getElementById("loadingMsg");
+
+    const githubToken = localStorage.getItem("github_token");
+
+    if (!githubToken) {
+      loadingMsg.textContent = "⚠ No GitHub token found in localStorage.";
+    } else {
+      loadVideos();
+    }
+
+    async function fetchWithToken(url) {
+      const res = await fetch(url, {
+        headers: { Authorization: `token ${githubToken}` }
+      });
+      if (!res.ok) throw new Error("API request failed");
+      return res.json();
+    }
+
+    const observer = new IntersectionObserver((entries, obs) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("visible");
+          obs.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: "100px 0px" });
+
+    async function loadVideos() {
+      try {
+        loadingMsg.textContent = "Gathering your memories...";
+
+        const files = await fetchWithToken(apiUrl);
+        const videoFiles = files.filter(f => /\.(mp4|webm|ogg|mov|m4v)$/i.test(f.name));
+
+        const withCommits = await Promise.all(videoFiles.map(async f => {
+          const commits = await fetchWithToken(
+            `https://api.github.com/repos/${repoOwner}/${repoName}/commits?path=videos/${f.name}&per_page=1`
+          );
+          const commit = commits[0];
+          return { ...f, commitDate: commit ? new Date(commit.commit.author.date) : new Date(0) };
+        }));
+
+        withCommits.sort((a, b) => b.commitDate - a.commitDate);
+
+        const dataResponse = await fetch(dataTxtUrl);
+        const dataText = await dataResponse.text();
+        const links = dataText.split(/\r?\n/).map(l => l.trim()).filter(l => l.startsWith("http"));
+        const reversedLinks = links.reverse();
+
+        grid.innerHTML = "";
+        loadingMsg.textContent = "Framing your moments...";
+
+        for (let i = 0; i < withCommits.length; i++) {
+          const file = withCommits[i];
+          const fileUrl = `${cdnBase}${file.name}?v=${Date.now()}`;
+          const commentUrl = reversedLinks[i] || "#";
+
+          const card = document.createElement("div");
+          card.className = "video-card";
+
+          const vid = document.createElement("video");
+          vid.src = fileUrl;
+          vid.muted = true;
+          vid.controls = false;
+          vid.onmouseenter = () => vid.play();
+          vid.onmouseleave = () => vid.pause();
+          card.appendChild(vid);
+
+          const body = document.createElement("div");
+          body.className = "card-body";
+          const name = document.createElement("div");
+          name.className = "video-name";
+          name.textContent = file.name.replace(/\.[^/.]+$/, "");
+          const meta = document.createElement("div");
+          meta.className = "video-meta";
+          meta.innerHTML = `📅 Updated: <b>${file.commitDate.toLocaleString()}</b>`;
+          body.append(name, meta);
+          card.append(body);
+
+          const footer = document.createElement("div");
+          footer.className = "card-footer";
+          const openBtn = document.createElement("button");
+          openBtn.textContent = "Open";
+          openBtn.onclick = () => openFullscreen(fileUrl);
+          const commentBtn = document.createElement("button");
+          commentBtn.textContent = "Comment";
+          commentBtn.onclick = () => window.open(commentUrl, "_blank");
+          footer.append(openBtn, commentBtn);
+          card.append(footer);
+
+          grid.append(card);
+          observer.observe(card);
+        }
+
+        loadingMsg.textContent = withCommits.length ? "" : "No moments yet — only echoes remain.";
+      } catch (err) {
+        console.error("Error loading videos:", err);
+        loadingMsg.textContent = "⚠ Could not load flashes. Invalid token or rate limit reached.";
+      }
+    }
+
+    function openFullscreen(fileUrl) {
+      const overlay = document.createElement("div");
+      overlay.className = "fullscreen-overlay";
+      const video = document.createElement("video");
+      video.src = fileUrl;
+      video.controls = true;
+      video.autoplay = true;
+      overlay.append(video);
+      const exitBtn = document.createElement("button");
+      exitBtn.textContent = "Exit";
+      exitBtn.className = "exit-btn";
+      exitBtn.onclick = () => overlay.remove();
+      overlay.append(exitBtn);
+      document.body.append(overlay);
+    }
+  </script>
+</body>
+</html>

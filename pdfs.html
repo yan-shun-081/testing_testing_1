@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>✨ Verse (Token + Fullscreen + Sorted + Comments)</title>
+  <style>
+    :root{
+      --bg1:#0f172a; --bg2:#1e293b; --card:rgba(30,41,59,0.9);
+      --accent:#6366f1; --accent-hover:#4f46e5; --text:#f8fafc; --muted:#94a3b8;
+    }
+    *{box-sizing:border-box}
+    body{font-family:"Poppins",sans-serif;margin:0;min-height:100vh;
+      background:linear-gradient(-45deg,var(--bg1),var(--bg2),#0f172a,#1e293b);
+      background-size:400% 400%;animation:bgMove 15s ease infinite;color:var(--text);
+      padding:1rem;overflow-x:hidden;font-size:15px;}
+    @keyframes bgMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    h1{text-align:center;margin-bottom:0.3rem;font-weight:800;font-size:2.2rem;letter-spacing:2px;
+       text-transform:uppercase;background:linear-gradient(90deg,#a855f7,#38bdf8,#facc15,#a855f7);
+       background-size:300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+       animation:glowShift 5s ease-in-out infinite,textGlow 2s ease-in-out infinite alternate}
+    .subtitle{text-align:center;font-size:1rem;color:var(--muted);letter-spacing:1px;margin-bottom:1.25rem;
+      opacity:0;animation:fadeIn 2s ease forwards 0.8s;font-style:italic}
+    @keyframes glowShift{0%{background-position:0%}50%{background-position:100%}100%{background-position:0%}}
+    @keyframes textGlow{from{text-shadow:0 0 10px #38bdf8,0 0 20px #a855f7}to{text-shadow:0 0 25px #facc15,0 0 45px #a855f7}}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.25rem;padding-bottom:3rem}
+    .pdf-card{background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 8px 25px rgba(0,0,0,0.45);
+      display:flex;flex-direction:column;opacity:0;transform:translateY(20px) scale(.98);
+      transition:opacity .6s ease,transform .45s ease,box-shadow .35s;position:relative}
+    .pdf-card.visible{opacity:1;transform:translateY(0) scale(1)}
+    canvas{width:100%;height:320px;background:#0f172a;filter:brightness(.95);transition:filter .25s}
+    .pdf-card:hover canvas{filter:brightness(1.08)}
+    .card-body{padding:.8rem 1rem;text-align:center}
+    .pdf-name{font-size:1rem;font-weight:600;color:#e2e8f0;margin:0.25rem 0}
+    .pdf-date{font-size:0.78rem;color:var(--muted);margin-top:0.25rem}
+    .card-footer{display:flex;justify-content:center;gap:10px;padding:.65rem;border-top:1px solid #334155;background:rgba(15,23,42,0.7);backdrop-filter:blur(8px)}
+    button{background:var(--accent);color:white;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:0.85rem;transition:transform .15s,background .15s,box-shadow .15s}
+    button:hover{background:var(--accent-hover);transform:scale(1.04);box-shadow:0 0 12px rgba(99,102,241,0.45)}
+    .ghost{background:transparent;border:1px solid #334155;color:var(--text)}
+    .ghost[disabled]{opacity:.5;cursor:not-allowed}
+
+    .loading{text-align:center;color:var(--muted);margin-top:2rem;animation:fadeIn 1.6s ease forwards}
+
+    /* Full-device overlay viewer */
+    .overlay {
+      position:fixed; inset:0; z-index:2147483647; background:rgba(6,8,15,0.98);
+      display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:0;margin:0;
+      overscroll-behavior:contain;
+    }
+    .overlay-header{
+      width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:transparent;
+      color:var(--text);
+    }
+    .overlay-controls{display:flex;gap:8px;align-items:center}
+    .zoom-btn{background:transparent;border:1px solid #334155;color:var(--text);padding:8px;border-radius:8px}
+    .viewer-scroller{
+      flex:1; width:100%; display:flex;align-items:flex-start;justify-content:center;overflow:auto;
+      -webkit-overflow-scrolling:touch; /* smooth native scrolling on iOS */
+      touch-action:pan-y; /* allow vertical scroll gestures */
+      padding:12px;
+    }
+    .pdf-canvas{display:block;max-width:100%;height:auto;box-shadow:0 6px 18px rgba(0,0,0,0.5);border-radius:6px}
+    .close-btn{background:#ef4444;color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    @media (max-width:420px){canvas{height:240px} .overlay-header{padding:8px}}
+  </style>
+</head>
+<body>
+  <h1>✨ Verse</h1>
+  <div class="subtitle">Whispers of thought captured in silent light</div>
+
+  <div id="pdfGrid" class="grid"></div>
+  <div id="loadingMsg" class="loading">Loading your creations...</div>
+
+  <!-- pdf.js -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+
+  <script>
+  (function(){
+    const repoOwner = "yan-shun-180";
+    const repoName  = "testing_websites_1";
+    const branch = "main";
+    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/pdfs`;
+    const cdnBase = `https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}@${branch}/pdfs/`;
+    // use worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+
+    const grid = document.getElementById("pdfGrid");
+    const loadingMsg = document.getElementById("loadingMsg");
+
+    function getToken(){ return localStorage.getItem("github_token") || ""; }
+
+    async function fetchWithToken(url){
+      const token = getToken();
+      const headers = token ? { Authorization: `token ${token}` } : {};
+      const r = await fetch(url, { headers });
+      if (!r.ok) {
+        const err = new Error('GitHub API error');
+        err.status = r.status;
+        throw err;
+      }
+      return r.json();
+    }
+
+    async function fetchText(url){
+      const r = await fetch(url);
+      if (!r.ok) {
+        const err = new Error('fetchText failed');
+        err.status = r.status;
+        throw err;
+      }
+      return r.text();
+    }
+
+    async function fetchLastCommitDate(filePath){
+      try{
+        const commitsUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/commits?path=${encodeURIComponent(filePath)}&per_page=1`;
+        const token = getToken();
+        const headers = token ? { Authorization: `token ${token}` } : {};
+        const r = await fetch(commitsUrl, { headers });
+        if (!r.ok) return null;
+        const data = await r.json();
+        return data[0]?.commit?.author?.date || null;
+      } catch { return null; }
+    }
+
+    // render thumbnail first page to canvas (lazy)
+    async function renderThumbnail(url, canvas){
+      try {
+        const cacheUrl = url + `?v=${Date.now()}`;
+        const loading = pdfjsLib.getDocument({ url: cacheUrl });
+        const pdf = await loading.promise;
+        const page = await pdf.getPage(1);
+        const scale = Math.min(0.6, (window.innerWidth < 420 ? 0.45 : 0.6));
+        const viewport = page.getViewport({ scale });
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(viewport.width * dpr);
+        canvas.height = Math.floor(viewport.height * dpr);
+        canvas.style.width = viewport.width + "px";
+        canvas.style.height = viewport.height + "px";
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        try{ await pdf.destroy(); }catch(e){}
+      } catch (err){
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = "#111827"; ctx.fillRect(0,0,canvas.width||300,canvas.height||200);
+        ctx.fillStyle = "#94a3b8"; ctx.font = "16px sans-serif";
+        ctx.fillText("Preview unavailable", 12, 30);
+      }
+    }
+
+    const observer = new IntersectionObserver((entries, obs)=>{
+      for(const entry of entries){
+        if(entry.isIntersecting){
+          const card = entry.target;
+          const canvas = card.querySelector("canvas");
+          const url = card.dataset.cdnUrl;
+          if (url && canvas && !canvas.dataset.loaded) {
+            renderThumbnail(url, canvas);
+            canvas.dataset.loaded = "1";
+          }
+          card.classList.add("visible");
+          obs.unobserve(card);
+        }
+      }
+    }, { rootMargin: "200px 0px" });
+
+    // Full-device viewer: fetch ArrayBuffer then render via pdf.js with zoom & pinch support.
+    // Updates:
+    //  - Requests Fullscreen API when permitted
+    //  - Adds history state so hardware back button closes overlay
+    //  - Ensures native scrolling works (touch-action, -webkit-overflow-scrolling)
+    async function openFullScreenPDF(bufferUrl, title, commentUrl) {
+      // create overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'overlay';
+      overlay.innerHTML = `
+        <div class="overlay-header">
+          <div style="display:flex;gap:12px;align-items:center">
+            <strong style="font-size:16px">${escapeHtml(title)}</strong>
+            ${commentUrl ? `<a href="${commentUrl}" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:underline;font-size:13px">Comments</a>` : ''}
+          </div>
+          <div class="overlay-controls">
+            <button class="zoom-btn" id="zoom-out">－</button>
+            <button class="zoom-btn" id="zoom-in">＋</button>
+            <button class="close-btn" id="close">Close</button>
+          </div>
+        </div>
+        <div class="viewer-scroller"><div id="pdfContainer" style="display:flex;flex-direction:column;align-items:center;gap:18px;max-width:100%;"></div></div>
+      `;
+      document.body.appendChild(overlay);
+
+      // attempt to enter fullscreen on a user gesture (allowed in most browsers if opened from click)
+      async function tryEnterFullscreen() {
+        try {
+          // request fullscreen on the overlay element
+          // (if the host page is inside an iframe and Fullscreen is disallowed by parent, this will fail silently)
+          if (overlay.requestFullscreen) {
+            await overlay.requestFullscreen().catch(()=>{});
+          } else if (overlay.webkitRequestFullscreen) {
+            await overlay.webkitRequestFullscreen().catch(()=>{});
+          }
+        } catch (e) {
+          // ignore - some hosts disable fullscreen in iframes
+        }
+      }
+
+      // push history state so Back button closes viewer
+      const pushedState = { __pdfViewerOpen: true };
+      try { history.pushState(pushedState, ""); } catch(e) { /* ignore */ }
+
+      // keep track if we should pop history on close
+      let historyPushed = true;
+
+      // helper to close and cleanup
+      let escHandler, popHandler;
+      const closeOverlay = async (fromPop=false) => {
+        try {
+          // if fullscreen, exit it
+          if (document.fullscreenElement || document.webkitFullscreenElement) {
+            try { await document.exitFullscreen().catch(()=>{}); } catch(e) {}
+          }
+        } catch(e){/* ignore */}
+
+        // remove listeners
+        document.removeEventListener('keydown', escHandler);
+        window.removeEventListener('popstate', popHandler);
+        overlay.remove();
+        // restore scrolling on body just in case
+        document.body.style.overflow = '';
+        // if we pushed the state and close wasn't triggered by popstate, go back one so browser history is tidy
+        if (historyPushed && !fromPop) {
+          // only call back if current state is ours; try/catch in case cross-origin restrictions
+          try { history.back(); } catch(e){}
+        }
+      };
+
+      // use popstate to detect Back / hardware back
+      popHandler = (ev) => {
+        // If the popped state is not our viewer state, close overlay
+        const state = ev.state;
+        // If state is not our pushedState (or null), close the overlay
+        if (!state || !state.__pdfViewerOpen) {
+          // Mark that we already handled history (so closeOverlay won't call history.back again)
+          historyPushed = false;
+          closeOverlay(true);
+        }
+      };
+      window.addEventListener('popstate', popHandler);
+
+      // ESC to close
+      escHandler = (e) => { if (e.key === 'Escape') { historyPushed = false; closeOverlay(); } };
+      document.addEventListener('keydown', escHandler);
+
+      // control buttons
+      const closeBtn = overlay.querySelector('#close');
+      const zoomInBtn = overlay.querySelector('#zoom-in');
+      const zoomOutBtn = overlay.querySelector('#zoom-out');
+      const container = overlay.querySelector('#pdfContainer');
+      const scroller = overlay.querySelector('.viewer-scroller');
+
+      closeBtn.addEventListener('click', () => { historyPushed = false; closeOverlay(); });
+
+      // load ArrayBuffer (cache-busted)
+      const cacheUrl = bufferUrl + `?v=${Date.now()}`;
+      let arrayBuffer;
+      try {
+        const resp = await fetch(cacheUrl, { method: 'GET', mode: 'cors', credentials: 'omit' });
+        if (!resp.ok) throw new Error('Fetch failed');
+        arrayBuffer = await resp.arrayBuffer();
+      } catch (err) {
+        console.error('Failed to download PDF for viewer', err);
+        closeOverlay();
+        alert('Failed to load PDF for viewing.');
+        return;
+      }
+
+      // render with pdf.js
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      let pdf;
+      try {
+        pdf = await loadingTask.promise;
+      } catch (err) {
+        console.error('pdf.js load error', err);
+        closeOverlay();
+        alert('Failed to parse PDF.');
+        return;
+      }
+
+      // initial scale and store pages for re-render on zoom
+      let scale = 1.15;
+      const renderedPages = [];
+
+      async function renderAll() {
+        // preserve scroll position (top of scroller)
+        const scrollTopBefore = scroller.scrollTop;
+        const scrollRatio = scroller.scrollHeight ? (scroller.scrollTop / scroller.scrollHeight) : 0;
+
+        container.innerHTML = '';
+        renderedPages.length = 0;
+        for (let p = 1; p <= pdf.numPages; p++) {
+          try {
+            const page = await pdf.getPage(p);
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            canvas.className = 'pdf-canvas';
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = Math.floor(viewport.width * dpr);
+            canvas.height = Math.floor(viewport.height * dpr);
+            canvas.style.width = Math.floor(viewport.width) + 'px';
+            canvas.style.height = Math.floor(viewport.height) + 'px';
+            ctx.setTransform(dpr,0,0,dpr,0,0);
+            container.appendChild(canvas);
+            renderedPages.push({page, canvas});
+            await page.render({ canvasContext: ctx, viewport }).promise;
+          } catch (e) {
+            console.warn('page render failed', e);
+          }
+        }
+
+        // restore a reasonable scroll position (try to keep user near what they saw)
+        requestAnimationFrame(()=> {
+          try {
+            const newScrollTop = Math.round((scroller.scrollHeight - scroller.clientHeight) * scrollRatio);
+            scroller.scrollTop = Math.min(newScrollTop, scroller.scrollHeight - scroller.clientHeight);
+          } catch(e){}
+        });
+      }
+
+      // zoom controls
+      zoomInBtn.addEventListener('click', ()=>{ scale = Math.min(4, scale + 0.25); renderAll();});
+      zoomOutBtn.addEventListener('click', ()=>{ scale = Math.max(0.5, scale - 0.25); renderAll();});
+
+      // pinch-to-zoom support (only adjusts scale when two fingers are used)
+      let lastDist = null;
+      let pinchActive = false;
+      // We attach pinch listeners to the scroller only; we do NOT prevent single-finger scrolling.
+      scroller.addEventListener('touchstart', (ev) => {
+        if (ev.touches && ev.touches.length === 2) {
+          pinchActive = true;
+          lastDist = distanceBetween(ev.touches[0], ev.touches[1]);
+        }
+      }, { passive: true });
+      scroller.addEventListener('touchmove', (ev) => {
+        if (pinchActive && ev.touches && ev.touches.length === 2) {
+          const d = distanceBetween(ev.touches[0], ev.touches[1]);
+          if (!lastDist) lastDist = d;
+          const delta = d - lastDist;
+          if (Math.abs(delta) > 8) {
+            if (delta > 0) scale = Math.min(4, scale + 0.12);
+            else scale = Math.max(0.5, scale - 0.12);
+            lastDist = d;
+            requestAnimationFrame(()=>renderAll());
+          }
+        }
+      }, { passive: true });
+      scroller.addEventListener('touchend', (ev) => { if (!ev.touches || ev.touches.length < 2) { pinchActive = false; lastDist = null; } }, { passive: true });
+
+      // double-tap to reset zoom (mobile) - detect fast double taps on scroller
+      let lastTap = 0;
+      scroller.addEventListener('touchend', (ev) => {
+        const now = Date.now();
+        if (now - lastTap < 300) { scale = 1.15; renderAll(); }
+        lastTap = now;
+      }, { passive: true });
+
+      // try fullscreen after we append overlay (must be in user gesture context originally)
+      tryEnterFullscreen();
+
+      // prevent background scroll while overlay exists (keeps host page fixed)
+      document.body.style.overflow = 'hidden';
+
+      // initial render
+      await renderAll();
+    } // end openFullScreenPDF
+
+    function distanceBetween(a,b){
+      const dx = a.clientX - b.clientX; const dy = a.clientY - b.clientY;
+      return Math.sqrt(dx*dx + dy*dy);
+    }
+
+    // sanitize small HTML text (title)
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;" })[c]); }
+
+    // main loader
+    async function loadPDFs(){
+      const token = getToken();
+      if (!token) {
+        loadingMsg.textContent = "⚠ No GitHub token found in localStorage.";
+        return;
+      }
+      loadingMsg.textContent = "Fetching PDFs from GitHub...";
+
+      try {
+        // fetch list
+        const files = await fetchWithToken(apiUrl);
+        const pdfFiles = Array.isArray(files) ? files.filter(f => f.name && f.name.toLowerCase().endsWith('.pdf')) : [];
+
+        // read comments/data.txt (cache-busted)
+        let commentUrls = [];
+        try {
+          const txt = await fetchText(cdnBase + 'data.txt' + `?v=${Date.now()}`);
+          commentUrls = txt.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+          // do not reverse yet — mapping will be based on sorted pdfs
+        } catch (e) {
+          // missing data.txt is fine
+          commentUrls = [];
+        }
+
+        // get commit dates for each PDF
+        const commitDates = await Promise.all(pdfFiles.map(f => fetchLastCommitDate(`pdfs/${f.name}`)));
+        // create entries
+        const pdfData = pdfFiles.map((f,i)=>({
+          file: f,
+          date: commitDates[i] ? new Date(commitDates[i]) : new Date(0)
+        }));
+        // sort by date descending => newest first (display order)
+        pdfData.sort((a,b) => b.date - a.date);
+
+        // Map comments reversed so newest PDF => last url
+        // If commentUrls length < pdfData length, remaining will be null
+        const reversedComments = commentUrls.slice().reverse(); // last url first
+        // Build final list with cdn URLs cache-busted
+        const final = pdfData.map((item, idx) => {
+          const name = item.file.name;
+          const cdnUrl = cdnBase + encodeURIComponent(name) + `?v=${Date.now()}`;
+          const comment = reversedComments[idx] || null;
+          return { name, cdnUrl, date: item.date, comment };
+        });
+
+        // render grid (newest first)
+        grid.innerHTML = '';
+        for (const entry of final) {
+          const card = document.createElement('div'); card.className = 'pdf-card'; card.dataset.cdnUrl = entry.cdnUrl;
+          const canvas = document.createElement('canvas');
+          canvas.width = 800; canvas.height = 600;
+          card.appendChild(canvas);
+
+          const body = document.createElement('div'); body.className = 'card-body';
+          body.innerHTML = `<div class="pdf-name">${escapeHtml(entry.name)}</div><div class="pdf-date">${entry.date && entry.date.getTime() ? entry.date.toLocaleString() : 'Date unknown'}</div>`;
+          card.appendChild(body);
+
+          const footer = document.createElement('div'); footer.className = 'card-footer';
+          const openBtn = document.createElement('button'); openBtn.textContent = 'Open';
+          openBtn.addEventListener('click', ()=> openFullScreenPDF(entry.cdnUrl.replace(/\?v=.*$/,''), entry.name, entry.comment));
+          footer.appendChild(openBtn);
+
+          const cbtn = document.createElement('button'); cbtn.className = 'ghost';
+          if (entry.comment) {
+            cbtn.textContent = '💬 Comment';
+            cbtn.addEventListener('click', ()=> window.open(entry.comment, '_blank', 'noopener'));
+          } else {
+            cbtn.textContent = 'No Comment';
+            cbtn.disabled = true;
+          }
+          footer.appendChild(cbtn);
+
+          card.appendChild(footer);
+          grid.appendChild(card);
+          observer.observe(card);
+        }
+
+        loadingMsg.textContent = final.length ? '' : 'No PDFs found.';
+      } catch (err) {
+        console.error(err);
+        if (err && (err.status === 401 || err.status === 403 || err.status === 429)) {
+          loadingMsg.textContent = "⚠ Could not load flashes. Invalid token or rate limit reached.";
+        } else {
+          loadingMsg.textContent = "⚠️ Failed to load PDFs.";
+        }
+      }
+    }
+
+    loadPDFs();
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>✨ HELIOUS</title>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Orbitron:wght@600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg1: #050b1e;
+  --bg2: #0b1124;
+  --accent1: #7dd3fc;
+  --accent2: #3b82f6;
+  --accent3: #9333ea;
+  --text: #e2e8f0;
+  --card: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  background: radial-gradient(circle at 50% 20%, #1e293b, #0f172a 60%);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  position: relative;
+  scroll-behavior: smooth;
+}
+
+/* ===== PARTICLE BACKGROUND EFFECT ===== */
+canvas#stars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ===== LOGO + TITLE ===== */
+.logo {
+  margin-top: 30px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.logo-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: conic-gradient(from 90deg, var(--accent2), var(--accent3), var(--accent1), var(--accent2));
+  box-shadow: 0 0 20px rgba(147,51,234,0.6);
+  margin: 0 auto 10px;
+  animation: rotate 6s linear infinite;
+}
+
+.logo h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.1rem;
+  background: linear-gradient(90deg, var(--accent2), var(--accent3), var(--accent1));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px rgba(59,130,246,0.5);
+}
+
+.tagline {
+  max-width: 800px;
+  text-align: center;
+  font-size: 0.9rem;
+  margin: 8px auto 20px;
+  opacity: 0.85;
+  line-height: 1.5;
+  background: linear-gradient(90deg, #60a5fa, #c084fc, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: glow 5s ease-in-out infinite alternate;
+}
+
+/* ===== NAVIGATION ===== */
+.navbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  z-index: 1;
+}
+
+.nav-item {
+  background: var(--card);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.nav-item::before {
+  content: "";
+  position: absolute;
+  top: -100%;
+  left: -100%;
+  width: 300%;
+  height: 300%;
+  background: conic-gradient(from 180deg, var(--accent1), var(--accent2), var(--accent3), var(--accent1));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: rotate 4s linear infinite;
+  z-index: 0;
+}
+
+.nav-item:hover::before {
+  opacity: 0.4;
+}
+
+.nav-item span {
+  position: relative;
+  z-index: 1;
+}
+
+.nav-item:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 0 20px rgba(59,130,246,0.4);
+}
+
+/* ===== GITHUB TOKEN BUTTON ===== */
+#tokenButton {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  background: var(--card);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 2;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+#tokenButton:hover {
+  background: var(--accent2);
+  color: #fff;
+}
+
+/* ===== TOKEN MODAL ===== */
+#tokenModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+#tokenModal.active { display: flex; }
+
+.token-box {
+  background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 25px 30px;
+  text-align: center;
+  box-shadow: 0 0 25px rgba(59,130,246,0.3);
+  max-width: 400px;
+  width: 90%;
+}
+
+.token-box h2 {
+  margin-bottom: 15px;
+  font-size: 1.4rem;
+  color: var(--accent1);
+}
+
+.token-box input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  background: rgba(255,255,255,0.1);
+  color: var(--text);
+  margin-bottom: 15px;
+}
+
+.token-box button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent2);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.token-box button:hover { background: var(--accent3); }
+
+/* ===== IFRAME VIEWER ===== */
+iframe {
+  width: 100%;
+  max-width: 1200px;
+  height: 80vh;
+  border: none;
+  border-radius: 18px;
+  background: var(--card);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 25px rgba(255,255,255,0.08);
+  transition: opacity 0.5s ease;
+  z-index: 1;
+  margin-bottom: 50px;
+}
+
+/* ===== FOOTER ===== */
+footer {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 0.8rem;
+  opacity: 0.5;
+  z-index: 1;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes rotate { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+@keyframes glow {
+  0% { text-shadow: 0 0 8px rgba(59,130,246,0.4); }
+  100% { text-shadow: 0 0 16px rgba(147,51,234,0.7), 0 0 22px rgba(34,211,238,0.6); }
+}
+
+@media (max-width:768px){
+  .logo h1{font-size:1.6rem;}
+  .tagline{font-size:0.8rem;padding:0 10px;}
+  .nav-item{font-size:0.85rem;padding:8px 14px;}
+  iframe{height:70vh;}
+}
+</style>
+</head>
+
+<body>
+  <canvas id="stars"></canvas>
+
+  <!-- GitHub Token Button -->
+  <button id="tokenButton">⚙️ GitHub Token</button>
+
+  <!-- Token Modal -->
+  <div id="tokenModal">
+    <div class="token-box">
+      <h2>Enter Your GitHub Token</h2>
+      <input type="password" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxx" />
+      <div>
+        <button id="saveToken">Save</button>
+        <button onclick="closeTokenModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="logo">
+    <div class="logo-icon"></div>
+    <h1>HELIOUS</h1>
+  </div>
+
+  <div class="tagline">
+    “IN EVERY FLASH LIES A FRAGMENT OF MY PERSONA , AN ARC OF LIGHT WRITTEN ACROSS REALMS AND VERSES UNSPOKEN”
+  </div>
+
+  <div class="navbar">
+    <div class="nav-item" onclick="loadPage('profiles.html')"><span>PERSONA</span></div>
+    <div class="nav-item" onclick="loadPage('images.html')"><span>FLASH</span></div>
+    <div class="nav-item" onclick="loadPage('videos.html')"><span>ARC</span></div>
+    <div class="nav-item" onclick="loadPage('pdfs.html')"><span>VERSE</span></div>
+    <div class="nav-item" onclick="loadPage('webs.html')"><span>REALM</span></div>
+    <div class="nav-item" onclick="loadPage('others.html')"><span>YOO</span></div>
+  </div>
+
+  <iframe id="contentFrame" src="profiles.html" title="Helious Section"></iframe>
+
+  <footer>© 2025 HELIOUS</footer>
+
+<script>
+/* ====== IFRAME PAGE LOADING ====== */
+function loadPage(page){
+  const frame=document.getElementById('contentFrame');
+  frame.style.opacity='0';
+  setTimeout(()=>{
+    frame.src=page;
+    frame.onload=()=>frame.style.opacity='1';
+  },300);
+}
+
+/* ====== TOKEN HANDLING ====== */
+const tokenButton=document.getElementById('tokenButton');
+const tokenModal=document.getElementById('tokenModal');
+const tokenInput=document.getElementById('tokenInput');
+const saveTokenBtn=document.getElementById('saveToken');
+
+tokenButton.onclick=()=>openTokenModal();
+
+function openTokenModal(){
+  const existing=localStorage.getItem('github_token')||'';
+  tokenInput.value=existing;
+  tokenModal.classList.add('active');
+}
+
+function closeTokenModal(){
+  tokenModal.classList.remove('active');
+}
+
+saveTokenBtn.onclick=()=>{
+  const token=tokenInput.value.trim();
+  if(token){
+    localStorage.setItem('github_token',token);
+    alert('✅ GitHub Token saved permanently!');
+  }else{
+    alert('⚠️ Please enter a valid token.');
+  }
+  closeTokenModal();
+};
+
+/* ===== Make token accessible to iframes ===== */
+window.addEventListener('message',(e)=>{
+  if(e.data==='get_github_token'){
+    const token=localStorage.getItem('github_token');
+    e.source.postMessage({github_token:token},'*');
+  }
+});
+
+/* ===== STARFIELD PARTICLE EFFECT ===== */
+const canvas=document.getElementById('stars');
+const ctx=canvas.getContext('2d');
+let stars=[];
+function resizeCanvas(){
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+  stars=Array.from({length:100},()=>({
+    x:Math.random()*canvas.width,
+    y:Math.random()*canvas.height,
+    r:Math.random()*2,
+    d:Math.random()*0.5+0.2
+  }));
+}
+function drawStars(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#ffffff';
+  stars.forEach(s=>{
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fill();
+  });
+  updateStars();
+  requestAnimationFrame(drawStars);
+}
+function updateStars(){
+  stars.forEach(s=>{
+    s.y+=s.d;
+    if(s.y>canvas.height){s.y=0;s.x=Math.random()*canvas.width;}
+  });
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();drawStars();
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🌍 Realm</title>
+  <style>
+    :root{
+      --bg:#0f172a; --card:#1e293b; --accent:#10b981; --accent-hover:#059669;
+      --text:#f8fafc; --muted:#94a3b8; --glow1:#34d399; --glow2:#60a5fa; --glow3:#a78bfa;
+    }
+    body{font-family:"Poppins",sans-serif;margin:0;background:var(--bg);color:var(--text);padding:1rem;overflow-x:hidden;}
+    .app-header{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:1.5rem;}
+    .app-logo{width:90px;height:90px;margin-bottom:.8rem;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--glow1),var(--glow2),var(--glow3));box-shadow:0 0 25px rgba(16,185,129,.5),0 0 45px rgba(96,165,250,.3);animation:pulseGlow 3.5s ease-in-out infinite;position:relative;}
+    .app-logo::after{content:"";position:absolute;inset:6px;border-radius:50%;background:radial-gradient(circle at 60% 60%,#0f172a,rgba(15,23,42,.6));}
+    @keyframes pulseGlow{0%{box-shadow:0 0 20px var(--glow1),0 0 30px var(--glow2);}50%{box-shadow:0 0 35px var(--glow3),0 0 60px var(--glow2);}100%{box-shadow:0 0 20px var(--glow1),0 0 30px var(--glow2);}}
+    h1{font-weight:800;font-size:2.6rem;letter-spacing:3px;text-transform:uppercase;background:linear-gradient(90deg,var(--glow1),var(--glow2),var(--glow3),var(--glow1));background-size:300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:glowShift 6s ease-in-out infinite,textGlow 2s ease-in-out infinite alternate;margin:0;}
+    .subtitle{font-size:.95rem;color:var(--muted);letter-spacing:1px;margin-top:.4rem;opacity:0;animation:fadeIn 2s ease forwards .5s;font-style:italic;}
+    @keyframes glowShift{0%{background-position:0%}50%{background-position:100%}100%{background-position:0%}}
+    @keyframes textGlow{from{text-shadow:0 0 10px var(--glow2),0 0 20px var(--glow1)}to{text-shadow:0 0 25px var(--glow3),0 0 45px var(--glow1)}}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.5rem;padding-bottom:3rem}
+    .web-card{background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 8px 25px rgba(0,0,0,.4);display:flex;flex-direction:column;opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .4s ease}
+    .web-card.visible{opacity:1;transform:translateY(0)}
+    .web-card:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 12px 30px rgba(0,0,0,.5)}
+    iframe.preview{width:100%;height:240px;background:#0f172a;border:none;pointer-events:none;} /* frozen interaction in grid */
+    .card-body{padding:.8rem 1rem;text-align:center}
+    .web-name{font-size:1rem;font-weight:600;color:#e2e8f0;margin:.3rem 0}
+    .web-meta{font-size:.8rem;color:var(--muted);margin-top:.3rem}
+    .card-footer{display:flex;justify-content:center;gap:10px;padding:.75rem;border-top:1px solid #334155}
+    button{background:var(--accent);color:white;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;font-size:.85rem;transition:background .3s}
+    button:hover{background:var(--accent-hover)}
+    .loading{text-align:center;color:var(--muted);margin-top:2rem}
+    .fullscreen-overlay{position:fixed;inset:0;background:#0f172a;z-index:9999;display:flex;flex-direction:column}
+    .fs-exit{position:absolute;top:18px;right:18px;background:#ef4444;border:none;color:#fff;padding:10px 14px;border-radius:8px;cursor:pointer;z-index:10000}
+  </style>
+</head>
+<body>
+  <div class="app-header">
+    <div class="app-logo"></div>
+    <h1>Realm</h1>
+    <div class="subtitle">Where imagination builds new worlds</div>
+  </div>
+
+  <div id="webGrid" class="grid"></div>
+  <div id="loadingMsg" class="loading">Shaping your worlds...</div>
+
+  <script>
+  (async function(){
+    const repoOwner = "yan-shun-180";
+    const repoName  = "testing_websites_1";
+    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/webs`;
+    const cdnBase = `https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}/webs/`;
+    const dataTxtUrl = `${cdnBase}data.txt?v=${Date.now()}`;
+
+    const grid = document.getElementById('webGrid');
+    const loadingMsg = document.getElementById('loadingMsg');
+
+    const githubToken = localStorage.getItem("github_token");
+    if(!githubToken){
+      loadingMsg.textContent = "⚠ No GitHub token found in localStorage.";
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries, obs)=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){ e.target.classList.add('visible'); obs.unobserve(e.target); }
+      });
+    },{rootMargin:'100px 0px'});
+
+    async function fetchWithToken(url){
+      const res = await fetch(url,{headers:{Authorization:`token ${githubToken}`}});
+      if(!res.ok) throw new Error("API request failed");
+      return res.json();
+    }
+
+    async function fetchHTML(fileUrl){
+      try {
+        const res = await fetch(fileUrl+"?v="+Date.now());
+        return await res.text();
+      } catch {
+        return "<html><body style='color:red;background:#0f172a;'>⚠ Failed to load</body></html>";
+      }
+    }
+
+    async function getCommitDate(filePath){
+      const commitsUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/commits?path=${filePath}&per_page=1`;
+      try {
+        const commits = await fetchWithToken(commitsUrl);
+        if(commits.length > 0) return new Date(commits[0].commit.author.date);
+      } catch {}
+      return null;
+    }
+
+    async function addCard(name, fileUrl, commentUrl, commitDate){
+      const card = document.createElement('div'); card.className='web-card';
+      const iframe = document.createElement('iframe'); iframe.className='preview';
+      iframe.sandbox="allow-scripts allow-same-origin allow-forms";
+      iframe.srcdoc="<html><body style='color:white;background:#0f172a;text-align:center;padding:20px;'>Loading...</body></html>";
+      iframe.srcdoc = await fetchHTML(fileUrl);
+      card.prepend(iframe);
+
+      const body = document.createElement('div'); body.className='card-body';
+      const nameLabel = document.createElement('div'); nameLabel.className='web-name'; nameLabel.textContent = name.replace(/\.html?$/i,'');
+      const meta = document.createElement('div'); meta.className='web-meta';
+      meta.textContent = commitDate ? `📅 Last updated: ${commitDate.toLocaleString()}` : "📄 Live HTML preview";
+      body.append(nameLabel,meta); card.append(body);
+
+      const footer = document.createElement('div'); footer.className='card-footer';
+      const btnOpen = document.createElement('button'); btnOpen.textContent='Open';
+      btnOpen.onclick = async ()=>{
+        const overlay=document.createElement('div'); overlay.className='fullscreen-overlay';
+        const html = await fetchHTML(fileUrl);
+        const f=document.createElement('iframe'); 
+        f.className='preview'; 
+        f.style.cssText='flex:1;border:none'; 
+        f.srcdoc=html; 
+        f.removeAttribute('sandbox');  // remove all restrictions for fullscreen
+        f.style.pointerEvents = 'auto'; // allow scrolling & interactions
+        overlay.appendChild(f);
+
+        const exit=document.createElement('button'); exit.className='fs-exit'; exit.textContent='Exit'; 
+        exit.onclick=()=>document.body.removeChild(overlay);
+        overlay.appendChild(exit);
+
+        document.body.appendChild(overlay);
+      };
+      footer.appendChild(btnOpen);
+
+      const btnComment=document.createElement('button'); btnComment.textContent='Comment';
+      btnComment.onclick = ()=>window.open(commentUrl,'_blank');
+      footer.appendChild(btnComment);
+
+      card.appendChild(footer);
+      grid.appendChild(card);
+      observer.observe(card);
+    }
+
+    try {
+      loadingMsg.textContent='Building your realms...';
+      const files = await fetchWithToken(apiUrl);
+      const htmlFiles = files.filter(f=>f.type==='file' && /\.html?$/i.test(f.name));
+
+      const dataRes = await fetch(dataTxtUrl);
+      const commentLinks = (await dataRes.text()).split(/\s+/).filter(Boolean);
+
+      const htmlFilesWithDates = await Promise.all(htmlFiles.map(async f => {
+        const date = await getCommitDate(`webs/${f.name}`);
+        return {...f, commitDate: date};
+      }));
+
+      htmlFilesWithDates.sort((a,b)=>b.commitDate - a.commitDate);
+
+      grid.innerHTML='';
+
+      const reversedComments = commentLinks.slice().reverse();
+
+      for(let i=0;i<htmlFilesWithDates.length;i++){
+        const f=htmlFilesWithDates[i]; 
+        const commentUrl = reversedComments[i] || reversedComments[reversedComments.length-1] || "#";
+        await addCard(f.name, f.download_url, commentUrl, f.commitDate);
+      }
+
+      loadingMsg.textContent='';
+    } catch(err){
+      console.error(err);
+      loadingMsg.textContent = "⚠ Could not load flashes. Invalid token or rate limit reached.";
+    }
+
+  })();
+  </script>
+</body>
+</html>
