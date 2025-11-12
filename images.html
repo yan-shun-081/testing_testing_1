@@ -155,11 +155,9 @@
 
   <script>
     const repoOwner = "yan-shun-180";
-    const repoName = "testing_websites_1";
+    const repoName = "testing_testing_1";
     const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/images`;
-
-    // ✅ Implement cache-busting here
-    const cdnBase = `https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}/images/?v=${Date.now()}`;
+    const cdnBase = `https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}/images/`;
 
     const grid = document.getElementById("imgGrid");
     const loadingMsg = document.getElementById("loadingMsg");
@@ -173,8 +171,7 @@
     }
 
     async function fetchText(url) {
-      const shouldSendToken = url.startsWith("https://api.github.com");
-      const headers = shouldSendToken && userToken ? { Authorization: `token ${userToken}` } : {};
+      const headers = url.startsWith("https://api.github.com") && userToken ? { Authorization: `token ${userToken}` } : {};
       const res = await fetch(url, { headers });
       if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
       return res.text();
