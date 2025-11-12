@@ -118,20 +118,19 @@
 
     .loading { text-align: center; color: var(--muted); margin-top: 2rem; }
 
-    /* ---------- FULLSCREEN OVERLAY FIXED ---------- */
     .fullscreen-overlay {
       position: fixed; inset: 0;
       background: rgba(0, 0, 0, 0.95);
       display: flex; justify-content: center; align-items: center;
       z-index: 1000;
-      overflow: auto; /* ✅ allow scrolling for large images */
+      overflow: auto;
       padding: 10px;
     }
     .fullscreen-overlay img {
-      width: auto;  /* ✅ maintain original width */
-      height: auto; /* ✅ maintain original height */
-      max-width: none; /* remove max width restriction */
-      max-height: none; /* remove max height restriction */
+      width: auto;
+      height: auto;
+      max-width: none;
+      max-height: none;
       border-radius: 10px;
       box-shadow: 0 0 40px rgba(255,255,255,0.06);
     }
@@ -158,7 +157,9 @@
     const repoOwner = "yan-shun-180";
     const repoName = "testing_websites_1";
     const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/images`;
-    const cdnBase = `https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}/images/`;
+
+    // ✅ Implement cache-busting here
+    const cdnBase = `https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}/images/?v=${Date.now()}`;
 
     const grid = document.getElementById("imgGrid");
     const loadingMsg = document.getElementById("loadingMsg");
@@ -180,7 +181,7 @@
     }
 
     async function fetchDataTxt() {
-      const raw = `https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}/images/data.txt?v=${Date.now()}`;
+      const raw = `${cdnBase}data.txt?v=${Date.now()}`;
       try {
         return await fetchText(raw);
       } catch {
