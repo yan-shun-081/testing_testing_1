@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>✨ HELIOUS</title>
+
+  <!-- ✅ Redirect if ?go=true -->
   <script>
-    // ===== Redirect if ?go=true is present =====
     const params = new URLSearchParams(window.location.search);
     if (params.has("go") && params.get("go") === "true") {
       window.location.href = "https://yan-shun-180.github.io/testing_websites_1/";
     }
   </script>
-
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>✨ HELIOUS</title>
 
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Orbitron:wght@600&display=swap" rel="stylesheet">
@@ -137,7 +137,9 @@
     z-index: 0;
   }
 
-  .nav-item:hover::before { opacity: 0.4; }
+  .nav-item:hover::before {
+    opacity: 0.4;
+  }
 
   .nav-item span {
     position: relative;
