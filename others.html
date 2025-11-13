@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      overflow: hidden;
+      margin: 0;
+    }
+    h1 {
+      font-size: 3rem;
+      animation: fadeInDown 1.5s ease;
+    }
+    p {
+      font-size: 1.3rem;
+      margin-top: 10px;
+      opacity: 0.9;
+      animation: fadeIn 2s ease;
+    }
+    button {
+      margin-top: 30px;
+      padding: 12px 30px;
+      background: #22c55e;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+      animation: fadeInUp 2.5s ease;
+    }
+    button:hover {
+      background: #16a34a;
+      transform: scale(1.05);
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <h1>👋 Welcome to Our Website!</h1>
+  <p>We’re thrilled to have you here. Let’s get started!</p>
+  <button onclick="alert('Welcome aboard! Enjoy your stay 😊')">Continue</button>
+</body>
+</html>
